@@ -22,7 +22,7 @@ public class Server implements Hello {
             Server server = new Server();
             Hello stub = (Hello) UnicastRemoteObject.exportObject(server, 0);
 
-            Registry registry = LocateRegistry.getRegistry();
+            Registry registry = LocateRegistry.createRegistry(1992);
             registry.bind("Hello", stub);
 
             System.out.println("Server is ready!");

@@ -7,15 +7,13 @@ import java.rmi.registry.Registry;
 public class Client {
 
     public static void main(String[] args){
-        String host = "coucou";
-
         try{
-            Registry registry = LocateRegistry.getRegistry(host);
-            Hello stub = (Hello) registry.lookup("Hello");
+            Registry registry = LocateRegistry.getRegistry(1992);
+            Hello stub = (Hello) registry.lookup("Lamport");
             String response = stub.sayHello();
             System.out.println(response);
         } catch (Exception e) {
-            System.err.println("Client exception: " + e.toString());
+            System.err.println("Server exception: " + e.toString());
             e.printStackTrace();
         }
     }
