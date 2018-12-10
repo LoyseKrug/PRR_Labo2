@@ -1,7 +1,5 @@
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -15,25 +13,30 @@ public class Lamport implements ILamport {
     /* Variables */
 
     // The local clock
-    private int localClock;
+    //TODO check si on boucle ce qui se passe
+    private int localClock = 0;
 
-    // this lamport ID
+    // this Lamport ID
     private int id;
 
     // the local state of Lamport Algorithm
-    private MsgType[] messages;
+    private StoredMsg[] messages;
 
+    // la variable partagée et protégée en écriture
     private int var = 0;
 
     /* Methodes */
 
     // constructor, takes the number of Lamport servers.
+    //  caution, needs to be Init() before used
+    //TODO const nbOfLamports ?
+    //TODO register registry in construtor ?
     public Lamport(int nbOfLamports, int thisLamportId){
-        localClock = 0;
 
-        messages = new MsgType[nbOfLamports];
+        messages = new StoredMsg[nbOfLamports];
+
         for(int i = 0; i < messages.length; ++i){
-            messages[i] = new MsgType();
+            messages[i] = new StoredMsg();
         }
 
         id = thisLamportId;
@@ -42,44 +45,73 @@ public class Lamport implements ILamport {
     public void Init() throws RemoteException{
         for(int i = 0; i < messages.length; ++i){
             if(i != id) {
+                //TODO change if we are not local
                 Registry registry = LocateRegistry.getRegistry(1992 + i);
+
                 try {
+                    // gets "remote" reference to the other Lamport (for RMI usage)
                     messages[i].lamport =  (ILamport) registry.lookup("Lamport");
                 } catch (NotBoundException e) {
                     e.printStackTrace();
                 }
-            } else {
+            }
+            // if id is ours
+            else {
                 messages[i].lamport = this;
             }
         }
     }
 
+    // returns var value, not protected
     public int ReadVar() {
-        System.out.println("Lecture");
+        System.out.println("L"+ id + " read : " + var);
         return var;
     }
 
     public void IncrementVar() throws RemoteException {
 
-        System.out.println("Increment attempt :");
+        //TODO vérifier qu'on en a pas déja une dans le buffet, sinon bloquer
+        System.out.println("L"+ id + " ++ attempt");
         try {
 
+        synchronized (this) {
             //increment local clock
-            ++localClock;
+            //TODO section critique ?
+            ++localClock;   // increment for the action of setting our REQ
 
             // set our lamport to the correct state;
+            //TODO section critique ?
             messages[id].time = localClock;
             messages[id].type = TYPE.REQ;
-
+        }
             // foreach other lamport in the system
-            for(int i = 0; i < messages.length; ++i){
-                if(i != id) {
-
+            for (int i = 0; i < messages.length; ++i) {
+                if (i != id) {
                     // send a Request
-                    messages[i].lamport.Request(id, localClock);
+                    messages[i].lamport.Request(id, messages[id].time);
+
+                    synchronized (this){
+                        //TODO comment
+                        while(  messages[i].time < messages[id].time
+                                ||
+                                (
+                                    messages[i].type == TYPE.REQ &&
+                                    (
+                                        (
+                                            messages[i].time == messages[id].time
+                                            &&
+                                            i < id
+                                        )
+                                    )
+                                )
+                             ){
+                            System.out.println("L" + id + " waiting for L" + i + " msg type " + messages[id].type + "|" + messages[i].type + " time "  + messages[id].time + "|" + messages[i].time );
+                            this.wait();
+                        }
+                    }
                 }
             }
-
+            /*
             // foreach Lamport instance
             for(int i = 0; i < messages.length; ++i){
 
@@ -87,39 +119,53 @@ public class Lamport implements ILamport {
                 if(i != id){
                     // we sync-lock only the current message to ba able to wake him up in time needed
                     synchronized (messages[i]) {
+                        //TODO ref vérou ? how does it work
                         // we need to wait in different cases :
-                        // if the message we are checking is older than our REQ time
-                        // or if is is a REQ who's the time is exactly equal to ours and it has a smaller id than us
+                        // 1) if the message we are checking is older than our REQ time
+                        // 2) if the message we are checking is a REQ who's the time is exactly equal to ours REQ's time
+                        //    and it's emmiter has a smaller id than us
                         while(messages[i].time < messages[id].time ||
-                                (messages[i].type == TYPE.REQ && messages[i].time == messages[id].time && !(i < id))){
-                            System.out.println("Lamport " + id + " is waiting on " + i);
+                                (messages[i].type == TYPE.REQ && messages[i].time == messages[id].time && (i < id))){
+
+                            System.out.println("L" + id + " is waiting on L" + i + "'s ACK/Free");
+
                             // we wait for an update to recheck
                             messages[i].wait();
                         }
-                    }
+                    }   // end sync
                 }
             }
-
+            */
+        int time = 0;
+        synchronized (this) {
             // we have access to the variable
+            //TODO section critique ?
             ++var;
 
+            //TODO section critique ?
+            ++localClock;   // incrementation for the action of modifying var
+
             // we need to free access to the variable
+            // we set our "message" to FREE with new time
 
-            ++localClock;
-
+            //TODO section critique ?
             messages[id].time = localClock;
             messages[id].type = TYPE.FREE;
+            //notify(id); //TODO est-ce qu'on passe plutot par le Free() - non sinon on incrémente 2x la clock
+            time = localClock;
+        }
 
             // foreach other lamport in the system
+            //TODO section critique ?
             for(int i = 0; i < messages.length; ++i){
                 if(i != id) {
-
                     // send a Free with the new value
-                    messages[i].lamport.Free(id, localClock, var);
+                    messages[i].lamport.Free(id, time, var);
                 }
             }
 
             // in case of timeout we throw a remoteException
+            //TODO what cases exactly (comment needed)
         } catch (InterruptedException e) {
             e.printStackTrace();
             throw new RemoteException("Timeout");
@@ -130,60 +176,79 @@ public class Lamport implements ILamport {
     }
 
     // when we recieve a request.
-    public synchronized void Request(int p, int t) throws RemoteException {
-        System.out.println("Request from " + p + " at " + t + " local time " + (localClock + 1));
+    public void Request(int p, int t) throws RemoteException {
 
-        messages[p].type = TYPE.REQ;
-        messages[p].time = t;
-
-        syncClock(t);
-        notify(p);
-
-        messages[p].lamport.Acknowledge(id, localClock);
-    }
-
-    // when we recieve an Acknowledge
-    public synchronized void Acknowledge(int p, int t) {
-        System.out.println("Ack from " + p + " at " + t + " local time " + (localClock + 1));
-
-        if(messages[p].type != TYPE.REQ) {
-
-            messages[p].type = TYPE.ACK;
+        int time = 0;
+        //TODO section critique ?
+        synchronized (this) {
+            System.out.println("L" + id + " request from " + p + " at " + t + " local time " + (localClock + 1));
+            messages[p].type = TYPE.REQ;
             messages[p].time = t;
 
             syncClock(t);
-            notify(p);
-        } else {
-            // we need to not notify if nothing has changes
-            syncClock(t);
+            time = localClock;
+            //notify(p);
+        }
+
+        messages[p].lamport.Acknowledge(id, time);
+    }
+
+    // when we recieve an Acknowledge
+    public void Acknowledge(int p, int t) {
+
+        synchronized (this) {
+            System.out.println("L" + id + " ack from " + p + " at " + t + " local time " + (localClock + 1));
+            // if it was not a REQ
+            if (messages[p].type != TYPE.REQ) {
+
+                //TODO section critique ?
+                messages[p].type = TYPE.ACK;
+                messages[p].time = t;
+
+                syncClock(t);
+                //notify(p);
+            }
+            // if last message from p is a REQ we ignore
+            else {
+                // we don't need to notify if nothing has changes
+                syncClock(t);
+            }
         }
     }
 
     // when we recieve a Free
-    public synchronized void Free(int p, int t, int val) {
-        System.out.println("Free from " + p + " at " + t + " local time " + (localClock + 1));
-        var = val;
+    public void Free(int p, int t, int val) {
 
-        messages[p].type = TYPE.FREE;
-        messages[p].time = t;
+        synchronized (this) {
+            System.out.println("L" + id + "free from " + p + " at " + t + " local time " + (localClock + 1));
+            //TODO section critique ?
+            var = val;
 
-        syncClock(t);
-        notify(p);
+            //TODO section critique ?
+            messages[p].type = TYPE.FREE;
+            messages[p].time = t;
+
+            syncClock(t);
+            //notify(p);
+            this.notify();
+        }
     }
 
     // symple clock sync to use when recieving an event
     private void syncClock(int t){
-        // in every case, we update the clock if needed.
-        if(localClock <= t) {
-            localClock = t + 1;
-        } else {
-            ++localClock;
+        synchronized (this) {
+            // in every case, we update the clock if needed.
+            if(localClock <= t) {
+                localClock = t + 1;
+            } else {
+                ++localClock;
+            }
         }
     }
 
     // simple system to make requests wake up when they are stopped.
     private void notify(int p){
-        synchronized (messages[p]){
+        synchronized (this){
             messages[p].notify();
         }
     }
