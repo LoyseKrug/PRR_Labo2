@@ -1,5 +1,6 @@
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -7,13 +8,9 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
 public class Lamport implements ILamport {
-
-
-
     /* Variables */
 
     // The local clock
-    //TODO check si on boucle ce qui se passe
     private int localClock = 0;
 
     // this Lamport ID
@@ -29,20 +26,37 @@ public class Lamport implements ILamport {
 
     // constructor, takes the number of Lamport servers.
     //  caution, needs to be Init() before used
-    //TODO const nbOfLamports ?
-    //TODO register registry in construtor ?
-    public Lamport(int nbOfLamports, int thisLamportId){
+    public Lamport(int nbOfLamports, int thisLamportId) {
 
         messages = new StoredMsg[nbOfLamports];
 
-        for(int i = 0; i < messages.length; ++i){
+        for (int i = 0; i < messages.length; ++i) {
             messages[i] = new StoredMsg();
         }
 
         id = thisLamportId;
+
+        try {
+            // bind to registery
+            ILamport lamport = (ILamport) UnicastRemoteObject.exportObject(this, 0);
+
+            // each pair lamport-client has his own port number defined by there id
+            Registry registry = LocateRegistry.createRegistry(1992 + id);
+
+            registry.bind("Lamport", lamport);
+
+        }
+        // remote exception during exportation
+        catch (RemoteException e) {
+            e.printStackTrace();
+        }
+        // coulden't bind Registry
+        catch (AlreadyBoundException e) {
+            e.printStackTrace();
+        }
     }
 
-    public void Init() throws RemoteException{
+    public void Init() throws RemoteException {
         for(int i = 0; i < messages.length; ++i){
             if(i != id) {
                 //TODO change if we are not local
@@ -70,127 +84,107 @@ public class Lamport implements ILamport {
 
     public void IncrementVar() throws RemoteException {
 
-        //TODO vérifier qu'on en a pas déja une dans le buffet, sinon bloquer
         System.out.println("L"+ id + " ++ attempt");
         try {
 
-        synchronized (this) {
-            //increment local clock
-            //TODO section critique ?
-            ++localClock;   // increment for the action of setting our REQ
+            synchronized (this) {
+                //increment local clock
+                ++localClock;   // increment for the action of setting our REQ
 
-            // set our lamport to the correct state;
-            //TODO section critique ?
-            messages[id].time = localClock;
-            messages[id].type = TYPE.REQ;
-        }
-            // foreach other lamport in the system
+                // set our lamport to the correct state;
+                messages[id].time = localClock;
+                messages[id].type = TYPE.REQ;
+            }
+
+            // foreach other lamport in the system we need an ACK
             for (int i = 0; i < messages.length; ++i) {
                 if (i != id) {
                     // send a Request
                     messages[i].lamport.Request(id, messages[id].time);
 
                     synchronized (this){
-                        //TODO comment
-                        while(  messages[i].time < messages[id].time
-                                ||
-                                (
-                                    messages[i].type == TYPE.REQ &&
-                                    (
-                                        (
-                                            messages[i].time == messages[id].time
-                                            &&
-                                            i < id
-                                        )
-                                    )
-                                )
-                             ){
+
+                        // this will make the current REQ wait until it is allowed to execute
+                        while(
+                                messages[i].time < messages[id].time                    // if the message[i] is older than our request
+                                ||                                                      // or
+                                (                                                       // (
+                                    messages[i].type == TYPE.REQ                        // if the message[i] is a REQ
+                                    &&                                                  // and
+                                    (                                                   //  (
+                                        messages[i].time == messages[id].time           //   it has the same time than our own request
+                                        &&                                              //   and
+                                        i < id                                          //   his id has priority over ours
+                                    )                                                   //  )
+                                )                                                       // )
+                             ){                                                         // then wait for a notify() from Free()
                             System.out.println("L" + id + " waiting for L" + i + " msg type " + messages[id].type + "|" + messages[i].type + " time "  + messages[id].time + "|" + messages[i].time );
                             this.wait();
                         }
                     }
                 }
+            }// end of the REQ, we are good to modify the variable
+
+            // local temp variable to store the time of free message
+            int tempTime;
+
+            synchronized (this) {
+                // we have access to the variable
+                ++var;
+                // incrementation for the action of modifying var
+                ++localClock;
+
+                // we need to free access to the variable now that we modified it
+                // we set our "message" to FREE with new time
+                messages[id].time = localClock;
+                messages[id].type = TYPE.FREE;
+
+                // we store the free time as we are leaving the synchronized section and need
+                // to be coherent when we send the Free message to other Lamports
+                // we use tempTime to store it locally
+                tempTime = localClock;
             }
-            /*
-            // foreach Lamport instance
-            for(int i = 0; i < messages.length; ++i){
-
-                // if it isen't us
-                if(i != id){
-                    // we sync-lock only the current message to ba able to wake him up in time needed
-                    synchronized (messages[i]) {
-                        //TODO ref vérou ? how does it work
-                        // we need to wait in different cases :
-                        // 1) if the message we are checking is older than our REQ time
-                        // 2) if the message we are checking is a REQ who's the time is exactly equal to ours REQ's time
-                        //    and it's emmiter has a smaller id than us
-                        while(messages[i].time < messages[id].time ||
-                                (messages[i].type == TYPE.REQ && messages[i].time == messages[id].time && (i < id))){
-
-                            System.out.println("L" + id + " is waiting on L" + i + "'s ACK/Free");
-
-                            // we wait for an update to recheck
-                            messages[i].wait();
-                        }
-                    }   // end sync
-                }
-            }
-            */
-        int time = 0;
-        synchronized (this) {
-            // we have access to the variable
-            //TODO section critique ?
-            ++var;
-
-            //TODO section critique ?
-            ++localClock;   // incrementation for the action of modifying var
-
-            // we need to free access to the variable
-            // we set our "message" to FREE with new time
-
-            //TODO section critique ?
-            messages[id].time = localClock;
-            messages[id].type = TYPE.FREE;
-            //notify(id); //TODO est-ce qu'on passe plutot par le Free() - non sinon on incrémente 2x la clock
-            time = localClock;
-        }
 
             // foreach other lamport in the system
-            //TODO section critique ?
             for(int i = 0; i < messages.length; ++i){
                 if(i != id) {
-                    // send a Free with the new value
-                    messages[i].lamport.Free(id, time, var);
+                    // we send a Free message with the new value
+                    messages[i].lamport.Free(id, tempTime, var);
                 }
             }
-
-            // in case of timeout we throw a remoteException
-            //TODO what cases exactly (comment needed)
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            throw new RemoteException("Timeout");
         }
-
-
-
+        // we catch an eventual exception from the wait()
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
-    // when we recieve a request.
+    // when we recieve a REQ message.
     public void Request(int p, int t) throws RemoteException {
 
-        int time = 0;
-        //TODO section critique ?
+
+        // local temp variable to store the time of REQ message reception
+        int tempTime;
+
         synchronized (this) {
-            System.out.println("L" + id + " request from " + p + " at " + t + " local time " + (localClock + 1));
+            System.out.println("L" + id + " recieved request from " + p + " at " + t + " local time " + (localClock + 1));
+
+            // we store the new state of Lamport p and the time it has been sent
             messages[p].type = TYPE.REQ;
             messages[p].time = t;
 
+            // we sync our clock to process the new event
             syncClock(t);
-            time = localClock;
-            //notify(p);
+
+            // we store the REQ reception time to ba able to
+            tempTime = localClock;
+
+            // we notify ourself in case we are waiting on a REQ to access the protected var
+            this.notify();
         }
 
-        messages[p].lamport.Acknowledge(id, time);
+        // finally, we send our acknowlagement
+        messages[p].lamport.Acknowledge(id, tempTime);
     }
 
     // when we recieve an Acknowledge
@@ -198,21 +192,21 @@ public class Lamport implements ILamport {
 
         synchronized (this) {
             System.out.println("L" + id + " ack from " + p + " at " + t + " local time " + (localClock + 1));
-            // if it was not a REQ
+            // if Lamport p is not currently waiting on a REQ, we will store the ACK
             if (messages[p].type != TYPE.REQ) {
 
-                //TODO section critique ?
+                // we store the new state of Lamport p and the time it has been sent
                 messages[p].type = TYPE.ACK;
                 messages[p].time = t;
 
-                syncClock(t);
-                //notify(p);
             }
-            // if last message from p is a REQ we ignore
-            else {
-                // we don't need to notify if nothing has changes
-                syncClock(t);
-            }
+            // else Lamport p was waiting on a REQ so we discare the ACK, we have all the informations we need
+
+            // we sync our clock to process the new event in any case
+            syncClock(t);
+
+            // we notify ourself in case we are waiting on a ACK to access the protected var
+            this.notify();
         }
     }
 
@@ -220,36 +214,34 @@ public class Lamport implements ILamport {
     public void Free(int p, int t, int val) {
 
         synchronized (this) {
+
+            // when we recieve a free message, we update our local var value
             System.out.println("L" + id + "free from " + p + " at " + t + " local time " + (localClock + 1));
-            //TODO section critique ?
             var = val;
 
-            //TODO section critique ?
+            // we store the new state of Lamport p and the time it has been sent
             messages[p].type = TYPE.FREE;
             messages[p].time = t;
 
+            // we sync our clock
             syncClock(t);
-            //notify(p);
+
+            // we notify ourself in case we are waiting on a Free to access the protected var
             this.notify();
         }
     }
 
-    // symple clock sync to use when recieving an event
+    // simple clock sync to use when recieving an event
     private void syncClock(int t){
         synchronized (this) {
-            // in every case, we update the clock if needed.
+            // if our clock is late, we set it to t + 1
             if(localClock <= t) {
                 localClock = t + 1;
-            } else {
+            }
+            // if we are in advance, we simply increment it
+            else {
                 ++localClock;
             }
-        }
-    }
-
-    // simple system to make requests wake up when they are stopped.
-    private void notify(int p){
-        synchronized (this){
-            messages[p].notify();
         }
     }
 
@@ -289,11 +281,6 @@ public class Lamport implements ILamport {
                 System.out.println("Lamport server " + i + " is starting ...");
 
                 Lamport lamport = new Lamport(nb, i);
-                lamports[i] = (ILamport) UnicastRemoteObject.exportObject(lamport, 0);
-
-                // each pair lamport-client has his own port number
-                Registry registry = LocateRegistry.createRegistry(1992 + i);
-                registry.bind("Lamport", lamports[i]);
 
                 System.out.println("Lamport server " + i + " is binded!");
             }
