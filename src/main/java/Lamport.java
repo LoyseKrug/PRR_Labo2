@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
@@ -82,6 +83,55 @@ public class Lamport implements ILamport {
         return var;
     }
 
+    // modifies the value
+    public void WriteVar(int newValue) {
+        System.out.println("L"+ id + " ++ attempt");
+        try {
+            synchronized (this) {
+                //increment local clock
+                ++localClock;   // increment for the action of setting our REQ
+
+                // set our lamport to the correct state;
+                messages[id].time = localClock;
+                messages[id].type = TYPE.REQ;
+            }
+
+            // sends the REQ and processes the ACK/FREE
+            GetAccessPermission();
+
+            // local temp variable to store the time of free message
+            int tempTime;
+
+            synchronized (this) {
+                // we have access to the variable
+                var = newValue;
+                // incrementation for the action of modifying var
+                ++localClock;
+
+                // we need to free access to the variable now that we modified it
+                // we set our "message" to FREE with new time
+                messages[id].time = localClock;
+                messages[id].type = TYPE.FREE;
+
+                // we store the free time as we are leaving the synchronized section and need
+                // to be coherent when we send the Free message to other Lamports
+                // we use tempTime to store it locally
+                tempTime = localClock;
+            }
+
+            // frees all other Lamports
+            SendFreeMessages(tempTime);
+        }
+        // we catch an eventual exception from the wait()
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        // or an eventual RemoteException from the Free
+        catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void IncrementVar() throws RemoteException {
 
         System.out.println("L"+ id + " ++ attempt");
@@ -96,34 +146,8 @@ public class Lamport implements ILamport {
                 messages[id].type = TYPE.REQ;
             }
 
-            // foreach other lamport in the system we need an ACK
-            for (int i = 0; i < messages.length; ++i) {
-                if (i != id) {
-                    // send a Request
-                    messages[i].lamport.Request(id, messages[id].time);
-
-                    synchronized (this){
-
-                        // this will make the current REQ wait until it is allowed to execute
-                        while(
-                                messages[i].time < messages[id].time                    // if the message[i] is older than our request
-                                ||                                                      // or
-                                (                                                       // (
-                                    messages[i].type == TYPE.REQ                        // if the message[i] is a REQ
-                                    &&                                                  // and
-                                    (                                                   //  (
-                                        messages[i].time == messages[id].time           //   it has the same time than our own request
-                                        &&                                              //   and
-                                        i < id                                          //   his id has priority over ours
-                                    )                                                   //  )
-                                )                                                       // )
-                             ){                                                         // then wait for a notify() from Free()
-                            System.out.println("L" + id + " waiting for L" + i + " msg type " + messages[id].type + "|" + messages[i].type + " time "  + messages[id].time + "|" + messages[i].time );
-                            this.wait();
-                        }
-                    }
-                }
-            }// end of the REQ, we are good to modify the variable
+            // sends the REQ and processes the ACK/FREE
+            GetAccessPermission();
 
             // local temp variable to store the time of free message
             int tempTime;
@@ -145,19 +169,16 @@ public class Lamport implements ILamport {
                 tempTime = localClock;
             }
 
-            // foreach other lamport in the system
-            for(int i = 0; i < messages.length; ++i){
-                if(i != id) {
-                    // we send a Free message with the new value
-                    messages[i].lamport.Free(id, tempTime, var);
-                }
-            }
+            // frees all other Lamports
+            SendFreeMessages(tempTime);
         }
         // we catch an eventual exception from the wait()
         catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
+
+
 
     // when we recieve a REQ message.
     public void Request(int p, int t) throws RemoteException {
@@ -245,61 +266,108 @@ public class Lamport implements ILamport {
         }
     }
 
-    public static void main(String[] args){
+    // sends the REQ and processes the ACK/FREE
+    private void GetAccessPermission() throws InterruptedException, RemoteException {
+        // foreach other lamport in the system we need an ACK
+        for (int i = 0; i < messages.length; ++i) {
+            if (i != id) {
+                // send a Request
+                messages[i].lamport.Request(id, messages[id].time);
 
-        /*
-        // Read command line
+                synchronized (this){
+
+                    // this will make the current REQ wait until it is allowed to execute
+                    while(
+                        messages[i].time < messages[id].time                    // if the message[i] is older than our request
+                            ||                                                      // or
+                            (                                                       // (
+                                messages[i].type == TYPE.REQ                        // if the message[i] is a REQ
+                                    &&                                                  // and
+                                    (                                                   //  (
+                                        messages[i].time == messages[id].time           //   it has the same time than our own request
+                                        &&                                              //   and
+                                        i < id                                          //   his id has priority over ours
+                                    )                                                   //  )
+                            )                                                       // )
+                    ){                                                         // then wait for a notify() from Free()
+                        System.out.println("L" + id + " waiting for L" + i + " msg type " + messages[id].type + "|" + messages[i].type + " time "  + messages[id].time + "|" + messages[i].time );
+                        this.wait();
+                    }
+                }
+            }
+        }// end of the REQ, we are good to modify the variable, other Lamports are blocked
+    }
+
+    private void SendFreeMessages(int tempTime) throws RemoteException {
+
+        // foreach other lamport in the system
+        for(int i = 0; i < messages.length; ++i){
+            if(i != id) {
+                // we send a Free message with the new value
+                messages[i].lamport.Free(id, tempTime, var);
+            }
+        }
+    }
+
+    // pass 2 ints as arguments :
+    // num: int, the number of Lamports in the system
+    // id:  int, the id of this Lamport (first Lamport id is 0 last is num-1)
+    public static void main(String[] args){
+        // The number of Lamports servers in the system.
         int num = 0;
+        // The id of this Lamport server.
         int id = 0;
 
         try {
-            // Parse the string argument into an integer value.
+            // Parse the string arguments to integer values.
             num = Integer.parseInt(args[0]);
-            //id = Integer.parseInt(args[1]);
+            id = Integer.parseInt(args[1]);
         }
         catch (NumberFormatException nfe) {
-            // The first argument isn't a valid integer.
-            System.out.println("The first argument must be an integer.");
+            // In case of error
+            System.out.println("The first 2 arguments must be integers.");
             System.exit(1);
         }
-        */
 
-        // console version
+        // to read the console inputs for configuration
         InputStreamReader isr = new InputStreamReader(System.in);
         BufferedReader br = new BufferedReader(isr);
         String line = "";
 
+        // we try regestry
         try {
-            System.out.println("Please enter a number of Lamport instances you desire.");
-            line = br.readLine();
 
-            int nb = Integer.parseInt(line);
+            System.out.println("Lamport server " + id + " is starting ...");
 
-            ILamport[] lamports = new ILamport[nb];
+            Lamport lamport = new Lamport(num, id);
 
-            for(int i = 0; i < nb; ++i) {// init Lamport
-                System.out.println("Lamport server " + i + " is starting ...");
+            System.out.println("Lamport server " + id + " is binded! - Ready to INIT");
 
-                Lamport lamport = new Lamport(nb, i);
+            System.out.println("Type \"init\" to init this lamport server. You should to this only after ALL Lamports servers have been binded and show the \"Ready to INIT\" message.");
 
-                System.out.println("Lamport server " + i + " is binded!");
+            while ((line = br.readLine()) != null && !line.equals("init") ){
+                System.out.println("Type \"init\" to init this lamport server. You should to this only after ALL Lamports servers have been binded and show the \"Ready to INIT\" message.");
             }
 
-            for(int i = 0; i < nb; ++i){
-                lamports[i].Init();
-                System.out.println("Lamport server " + i + " is ready!");
-            }
+            lamport.Init();
 
-            System.out.println("Type 'exit' to quit");
+            System.out.println("Lamport server " + id + " is ready!");
+
+            System.out.println("Type \"exit\" to quit");
 
             while ((line = br.readLine()) != null && !line.equals("exit") ){
                 System.out.println("Type 'exit' to quit");
             }
 
             isr.close();
-        } catch (Exception e) {
+        }
+        // in case we have a problem with the registry in the Init() function
+        catch (RemoteException e) {
+            e.printStackTrace();
+        }
+        // in case we have a problem reading the user configs values
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
-
 }

@@ -23,29 +23,45 @@ public class CMDClient {
             Registry registry = LocateRegistry.getRegistry(1992 + clientID);
             ILamport stub = (ILamport) registry.lookup("Lamport");
 
-            System.out.println("Client is running. commands are \"u\" to update, \"<x>\" to increment x times and \"exit\" to exit");
+            System.out.println("Client is running. commands are \"read\" to read, \"set <int>\" to set to specific value, \"inc <x>\" to increment x times and \"exit\" to exit");
 
             while ((line = br.readLine()) != null && !line.equals("exit") ){
-                if(line.equals("u")){
-                    System.out.println("Var value is :" + stub.ReadVar());
-                } else {
-                    int num = 0;
-                    try {
-                        num = Integer.parseInt(line);
+
+                // we split the user command
+                String[] commands = line.split(" ");
+                int num = 0;
+
+                try {
+                    // Read
+                    if(commands[0].equals("read")){
+                        System.out.println("Var value is :" + stub.ReadVar());
+                    }
+                    //Write
+                    else if(commands[0].equals("set")) {
+                        num = Integer.parseInt(commands[1]);
+
+                        System.out.println("Value will be set to " + num);
+
+                        stub.WriteVar(num);
+                    }
+                    // Incrementation
+                    else if(commands[0].equals("inc")) {
+
+                        num = Integer.parseInt(commands[1]);
 
                         System.out.println("Value will be incremented " + num + " times ...");
-                        for(int i = 0; i < num; ++i){
+                        for (int i = 0; i < num; ++i) {
                             stub.IncrementVar();
                             System.out.println("Value incremented " + (i + 1) + " times");
                         }
-
-                        System.out.println("After " + num + " increments, Var value is :" + stub.ReadVar());
-
-                    } catch (NumberFormatException nfe){
-                        System.out.println("You must write 'u', 'exit' or a number of time to increment");
                     }
+                    // wrong command
+                    else{
+                        System.out.println("ERROR - Commands are \"read\" to read, \"set <int>\" to set to specific value, \"inc <x>\" to increment x times and \"exit\" to exit");
+                    }
+                } catch (NumberFormatException nfe){
+                    nfe.printStackTrace();
                 }
-
                 System.out.println("Process finished, please enter the next command : ");
             }
 

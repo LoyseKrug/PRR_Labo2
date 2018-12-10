@@ -45,6 +45,9 @@ public interface ILamport extends Remote{
      */
     int ReadVar() throws RemoteException;
 
+    // modification de la valeur
+    void WriteVar(int i) throws RemoteException;
+
     /**
      * Increments locally the value of the shared variable and informe all the other machines that the value
      * has changed. Therefore calls request for acknowlegment from all the other sites, treat the request,
