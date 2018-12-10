@@ -2,11 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="dc144482-5835-4f51-848a-b1d56b6e3ece" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/LamportStarter.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/CMDClient.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/CMDClient.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/ILamport.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/ILamport.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/Lamport.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Lamport.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/LamportStarter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/LamportStarter.java" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <ignored path="$PROJECT_DIR$/target/" />
@@ -49,7 +47,7 @@
     <session id="-739424851">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="2" />
+          <entry key="project.closed" value="3" />
           <entry key="project.open.time.1" value="1" />
           <entry key="project.open.time.10" value="1" />
           <entry key="project.open.time.12" value="1" />
@@ -59,12 +57,12 @@
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
           <entry key="dummy" value="1" />
-          <entry key="java" value="12348" />
+          <entry key="java" value="12402" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JAVA" value="12348" />
+          <entry key="JAVA" value="12402" />
           <entry key="PLAIN_TEXT" value="1" />
         </counts>
       </usages-collector>
@@ -102,20 +100,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/java/Lamport.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="455">
-              <caret line="290" column="54" selection-start-line="290" selection-start-column="54" selection-end-line="290" selection-end-column="54" />
-              <folding>
-                <element signature="imports" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/java/LamportStarter.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="408">
-              <caret line="24" lean-forward="true" selection-start-line="24" selection-end-line="24" />
+            <state relative-caret-position="-616">
+              <caret line="289" column="88" selection-start-line="289" selection-start-column="88" selection-end-line="289" selection-end-column="88" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -124,10 +110,22 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/src/main/java/LamportStarter.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="442">
+              <caret line="26" column="13" lean-forward="true" selection-start-line="26" selection-start-column="13" selection-end-line="26" selection-end-column="13" />
+              <folding>
+                <element signature="imports" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/java/CMDClient.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="149">
-              <caret line="30" column="52" lean-forward="true" selection-start-line="30" selection-start-column="52" selection-end-line="30" selection-end-column="52" />
+            <state relative-caret-position="540">
+              <caret line="60" column="153" selection-start-line="60" selection-start-column="153" selection-end-line="60" selection-end-column="153" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -161,9 +159,9 @@
         <option value="$PROJECT_DIR$/src/main/java/Server.java" />
         <option value="$PROJECT_DIR$/src/main/java/Client.java" />
         <option value="$PROJECT_DIR$/src/main/java/ILamport.java" />
-        <option value="$PROJECT_DIR$/src/main/java/LamportStarter.java" />
-        <option value="$PROJECT_DIR$/src/main/java/CMDClient.java" />
         <option value="$PROJECT_DIR$/src/main/java/Lamport.java" />
+        <option value="$PROJECT_DIR$/src/main/java/CMDClient.java" />
+        <option value="$PROJECT_DIR$/src/main/java/LamportStarter.java" />
       </list>
     </option>
   </component>
@@ -222,7 +220,7 @@
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="aspect.path.notification.shown" value="true" />
-    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1544460239308" />
+    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1544460679440" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
@@ -239,7 +237,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Application.CMDClient">
+  <component name="RunManager" selected="Application.LamportStarter">
     <configuration name="CMDClient" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="CMDClient" />
       <module name="PRR-LaboRMI" />
@@ -278,15 +276,24 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <configuration name="LamportStarter" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="LamportStarter" />
+      <module name="PRR-LaboRMI" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <list>
       <item itemvalue="Application.Lamport 0" />
       <item itemvalue="Application.Lamport 1" />
       <item itemvalue="Application.Lamport 2" />
       <item itemvalue="Application.Lamport" />
       <item itemvalue="Application.CMDClient" />
+      <item itemvalue="Application.LamportStarter" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Application.LamportStarter" />
         <item itemvalue="Application.CMDClient" />
         <item itemvalue="Application.Lamport" />
       </list>
@@ -305,18 +312,18 @@
       <workItem from="1543935190418" duration="2100000" />
       <workItem from="1544352273267" duration="15491000" />
       <workItem from="1544443111393" duration="8719000" />
-      <workItem from="1544453215393" duration="7017000" />
+      <workItem from="1544453215393" duration="7466000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="33327000" />
+    <option name="totallyTimeSpent" value="33776000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="54" y="-8" width="1874" height="1096" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" weight="0.12954795" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.12899669" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Image Layers" order="2" />
       <window_info id="Designer" order="3" />
@@ -418,16 +425,6 @@
     <entry file="file://$PROJECT_DIR$/pom.xml">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/Lamport.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="455">
-          <caret line="290" column="54" selection-start-line="290" selection-start-column="54" selection-end-line="290" selection-end-column="54" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/ILamport.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="510">
@@ -438,10 +435,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/LamportStarter.java">
+    <entry file="file://$PROJECT_DIR$/src/main/java/Lamport.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="408">
-          <caret line="24" lean-forward="true" selection-start-line="24" selection-end-line="24" />
+        <state relative-caret-position="-616">
+          <caret line="289" column="88" selection-start-line="289" selection-start-column="88" selection-end-line="289" selection-end-column="88" />
           <folding>
             <element signature="imports" expanded="true" />
           </folding>
@@ -450,8 +447,18 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/CMDClient.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="149">
-          <caret line="30" column="52" lean-forward="true" selection-start-line="30" selection-start-column="52" selection-end-line="30" selection-end-column="52" />
+        <state relative-caret-position="540">
+          <caret line="60" column="153" selection-start-line="60" selection-start-column="153" selection-end-line="60" selection-end-column="153" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/LamportStarter.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="442">
+          <caret line="26" column="13" lean-forward="true" selection-start-line="26" selection-start-column="13" selection-end-line="26" selection-end-column="13" />
           <folding>
             <element signature="imports" expanded="true" />
           </folding>

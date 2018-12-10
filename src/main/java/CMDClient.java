@@ -54,10 +54,11 @@ public class CMDClient {
                             stub.IncrementVar();
                             System.out.println("Value incremented " + (i + 1) + " times");
                         }
+                        System.out.println("Incrementation done.");
                     }
                     // wrong command
                     else{
-                        System.out.println("ERROR - Commands are \"read\" to read, \"set <int>\" to set to specific value, \"inc <x>\" to increment x times and \"exit\" to exit");
+                        System.out.println("ERROR - Commands are \"read\" to read, \"set <int>\" to set to specific value, \"inc <int>\" to increment int times and \"exit\" to exit");
                     }
                 } catch (NumberFormatException nfe){
                     nfe.printStackTrace();

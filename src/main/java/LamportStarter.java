@@ -21,7 +21,7 @@ public class LamportStarter {
             for(int i = 0; i < nb; ++i) {// init Lamport
                 System.out.println("Lamport server " + i + " is starting ...");
 
-                Lamport lamport = new Lamport(nb, i);
+                lamports[i] = new Lamport(nb, i);
 
                 System.out.println("Lamport server " + i + " is binded!");
             }

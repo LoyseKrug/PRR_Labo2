@@ -278,18 +278,18 @@ public class Lamport implements ILamport {
 
                     // this will make the current REQ wait until it is allowed to execute
                     while(
-                        messages[i].time < messages[id].time                    // if the message[i] is older than our request
-                            ||                                                      // or
-                            (                                                       // (
-                                messages[i].type == TYPE.REQ                        // if the message[i] is a REQ
-                                    &&                                                  // and
-                                    (                                                   //  (
-                                        messages[i].time == messages[id].time           //   it has the same time than our own request
-                                        &&                                              //   and
-                                        i < id                                          //   his id has priority over ours
-                                    )                                                   //  )
-                            )                                                       // )
-                    ){                                                         // then wait for a notify() from Free()
+                        messages[i].time < messages[id].time                            // if the message[i] is older than our request
+                            ||                                                          // or
+                            (                                                           // (
+                            messages[i].type == TYPE.REQ                                // if the message[i] is a REQ
+                                &&                                                      // and
+                                (                                                       //  (
+                                    messages[i].time == messages[id].time               //   it has the same time than our own request
+                                    &&                                                  //   and
+                                    i < id                                              //   his id has priority over ours
+                                )                                                       //  )
+                            )                                                           // )
+                    ){                                                                  // then wait for a notify() from Free()
                         System.out.println("L" + id + " waiting for L" + i + " msg type " + messages[id].type + "|" + messages[i].type + " time "  + messages[id].time + "|" + messages[i].time );
                         this.wait();
                     }
