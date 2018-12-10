@@ -20,6 +20,9 @@ public interface ILamport extends Remote{
     // lit la valeur
     int ReadVar() throws RemoteException;
 
+    // modification de la valeur
+    void WriteVar(int i) throws RemoteException;
+
     // incrémente la valeur
     void IncrementVar() throws RemoteException;
 
