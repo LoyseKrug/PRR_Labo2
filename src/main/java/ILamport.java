@@ -5,7 +5,8 @@
  *
  * Description:
  *              Interface ILamport extends Remote and must be implemented to create an RMI server
- *              It defines the different methods used by the Lamport algorithm
+ *              It defines the different methods used by the Lamport algorithm as well as the methods
+ *              usable by the CLI client
  *
  */
 

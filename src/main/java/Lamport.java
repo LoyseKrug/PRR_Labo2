@@ -1,3 +1,24 @@
+/**
+ * class :      Lamport.java
+ *
+ * Authors:     Adrien Allemand & Loyse Krug
+ *
+ * Description:
+ *              The Lamport class offers a RMI "server" protecting the variable var from concurrent access with the
+ *              Lamport Algotithme, using RMI only.
+ *              To run a Lamport server with this class, simply run it's main() by passing him 2 arguments :
+ *              The First will be the total number of Lamport Servers (representing distant sites) sharing the variable,
+ *              The Second will be this specific site's unique id. The ids must range from 0 to (number of lamport servers - 1)
+ *              Please memorize the id you give it as it will be required to connect a CLI to this server.
+ *
+ * Note :
+ *          There is a slight modification from the normal Lamport Algorithm as we are supposed to comunicate the
+ *          protected variable's new value to all other sites in the FREE message. As such we have treated all messages
+ *          separatly with 3 different methodes namely Request(), Acknowledge() and Free(). It is much clearer for
+ *          every message to have it's own methode than to have 2 (Req and Ack) grouped in a general message-processing
+ *          monstruosity with if everywhere and then a separate Free() methode with different parameters.
+ */
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -57,11 +78,14 @@ public class Lamport implements ILamport {
         }
     }
 
+    // The initialization of references on the other Remote Lamports can only be done once they are all
+    // binded to their respective registries. When they are all ready, call this methode on all of them.
     public void Init() throws RemoteException {
         for(int i = 0; i < messages.length; ++i){
             if(i != id) {
-                //TODO change if we are not local
-                Registry registry = LocateRegistry.getRegistry(1992 + i);
+
+                // if we are not local, change the port with the remote host.
+                Registry registry = LocateRegistry.getRegistry(Protocol.PORT + i);
 
                 try {
                     // gets "remote" reference to the other Lamport (for RMI usage)
@@ -72,6 +96,7 @@ public class Lamport implements ILamport {
             }
             // if id is ours
             else {
+                // bind our own reference
                 messages[i].lamport = this;
             }
         }
@@ -178,9 +203,11 @@ public class Lamport implements ILamport {
         }
     }
 
-
-
-    // when we recieve a REQ message.
+    /**
+     * when we recieve an Request message
+     * @param p this is the id of the Lamport Server sending the reques
+     * @param t this is the time at witch the other Lamport server sent the request (his local time).
+     */
     public void Request(int p, int t) throws RemoteException {
 
 
@@ -201,14 +228,18 @@ public class Lamport implements ILamport {
             tempTime = localClock;
 
             // we notify ourself in case we are waiting on a REQ to access the protected var
-            this.notify();
+            //this.notify();
         }
 
         // finally, we send our acknowlagement
         messages[p].lamport.Acknowledge(id, tempTime);
     }
 
-    // when we recieve an Acknowledge
+    /**
+     * when we recieve an Acknowledge message
+     * @param p this is the id of the Lamport Server sending the reques
+     * @param t this is the time at witch the other Lamport server sent the request (his local time).
+     */
     public void Acknowledge(int p, int t) {
 
         synchronized (this) {
@@ -227,11 +258,16 @@ public class Lamport implements ILamport {
             syncClock(t);
 
             // we notify ourself in case we are waiting on a ACK to access the protected var
-            this.notify();
+            //this.notify();
         }
     }
 
-    // when we recieve a Free
+    /**
+     * when we recieve an Acknowledge
+     * @param p     this is the id of the Lamport Server sending the reques
+     * @param t     this is the time at witch the other Lamport server sent the request (his local time).
+     * @param val   this is the new value for the protected variable
+     */
     public void Free(int p, int t, int val) {
 
         synchronized (this) {
@@ -252,7 +288,11 @@ public class Lamport implements ILamport {
         }
     }
 
-    // simple clock sync to use when recieving an event
+    /**
+     * Syncs the local clock
+     * @param t this is the time we recieved in a message, in orger to be coherent, we need to
+     *          compare our local time with it and modify it accordingly.
+     */
     private void syncClock(int t){
         synchronized (this) {
             // if our clock is late, we set it to t + 1
@@ -266,7 +306,13 @@ public class Lamport implements ILamport {
         }
     }
 
-    // sends the REQ and processes the ACK/FREE
+    /**
+     * GetAccessPermission will not return until it has obrained a permission to access the protected variable
+     * from all other Lamport servers. Use it before you want to modify the protected variable.
+     *
+     * @throws InterruptedException if the wait fails
+     * @throws RemoteException      if we have a problem with the other Lamport servers
+     */
     private void GetAccessPermission() throws InterruptedException, RemoteException {
         // foreach other lamport in the system we need an ACK
         for (int i = 0; i < messages.length; ++i) {
@@ -298,6 +344,11 @@ public class Lamport implements ILamport {
         }// end of the REQ, we are good to modify the variable, other Lamports are blocked
     }
 
+    /**
+     * SendFreeMessages notifies all other Lamport Servers that this one has finished using the protected variable.
+     * @param tempTime          the time of the modification to send to the other Lamport servers
+     * @throws RemoteException  is thrown if we have a RMI problem with the other Lamport servers
+     */
     private void SendFreeMessages(int tempTime) throws RemoteException {
 
         // foreach other lamport in the system
@@ -310,8 +361,12 @@ public class Lamport implements ILamport {
     }
 
     // pass 2 ints as arguments :
-    // num: int, the number of Lamports in the system
-    // id:  int, the id of this Lamport (first Lamport id is 0 last is num-1)
+
+    /**
+     * This allows to start a Single Lamport server from command line.
+     * @param args  first : num, int, the number of Lamports in the system
+     *              second: id, int, the id of this Lamport (first Lamport id is 0 last is num-1)
+     */
     public static void main(String[] args){
         // The number of Lamports servers in the system.
         int num = 0;
